@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TenderPack AI - Tender Package Verification & Compiler</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- pdf-lib for client-side PDF merging -->
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- External CSS -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
+
+  <!-- Header -->
+  <header class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex flex-wrap justify-between items-center gap-4">
+    <div class="flex items-center space-x-3">
+      <div class="p-2 bg-blue-600 rounded-lg text-white">
+        <i data-lucide="file-check-2" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h1 class="text-xl font-bold text-white" id="ui-title">TenderPack Assistant</h1>
+        <p class="text-xs text-slate-400" id="ui-subtitle">Automated Tender Document Validator & Single-PDF Compiler</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-4 flex-wrap">
+      <!-- Language Switcher -->
+      <div class="flex items-center bg-slate-900 border border-slate-700 rounded-lg p-1 text-xs">
+        <button id="lang-en" onclick="setLanguage('en')" class="px-2.5 py-1 rounded-md font-medium transition-all bg-blue-600 text-white">EN</button>
+        <button id="lang-bn" onclick="setLanguage('bn')" class="px-2.5 py-1 rounded-md font-medium transition-all text-slate-400 hover:text-white">বাংলা</button>
+      </div>
+
+      <!-- Submission Date -->
+      <div class="flex flex-col">
+        <label class="text-xs text-slate-400 font-medium mb-1" id="ui-sub-date-label">Target Submission Date</label>
+        <input type="date" id="submission-date" class="bg-slate-900 border border-slate-700 text-sm rounded-md px-3 py-1.5 text-white focus:ring-2 focus:ring-blue-500 outline-none">
+      </div>
+
+      <!-- Export Button -->
+      <button id="btn-export" onclick="exportPackage()" disabled class="mt-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-500 text-white text-sm font-semibold px-4 py-2 rounded-md flex items-center gap-2 transition-all cursor-pointer">
+        <i data-lucide="download" class="w-4 h-4"></i>
+        <span id="ui-compile-btn">Compile & Export PDF</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Layout -->
+  <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 overflow-hidden">
+    
+    <!-- Left Column: Tender Requirements Configurator -->
+    <section class="lg:col-span-4 bg-slate-800 rounded-xl border border-slate-700 p-5 flex flex-col gap-4">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+        <h2 class="font-semibold text-slate-200 flex items-center gap-2" id="ui-sec1-title">
+          <i data-lucide="list-checks" class="w-5 h-5 text-blue-400"></i>
+          1. Tender Requirements
+        </h2>
+        <span class="text-xs bg-blue-900 text-blue-200 px-2 py-0.5 rounded-full" id="req-count-badge">0 Requirements</span>
+      </div>
+
+      <p class="text-xs text-slate-400" id="ui-sec1-desc">Set the required document types, mandatory status, and required sequence.</p>
+
+      <div id="requirements-list" class="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[500px]">
+        <!-- Dynamic Requirements List -->
+      </div>
+
+      <div class="pt-3 border-t border-slate-700">
+        <button onclick="addCustomRequirement()" class="w-full border border-dashed border-slate-600 hover:border-blue-400 text-slate-300 hover:text-blue-400 text-xs py-2 rounded-lg flex justify-center items-center gap-2 transition-all">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          <span id="ui-add-req-btn">Add Extra Requirement</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Center Column: Pre-loaded Documents List -->
+    <section class="lg:col-span-5 bg-slate-800 rounded-xl border border-slate-700 p-5 flex flex-col gap-4">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+        <h2 class="font-semibold text-slate-200 flex items-center gap-2" id="ui-sec2-title">
+          <i data-lucide="folder-open" class="w-5 h-5 text-blue-400"></i>
+          2. Documents (/documents)
+        </h2>
+        <span class="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded-full" id="uploaded-count-badge">0 Documents</span>
+      </div>
+
+      <p class="text-xs text-slate-400" id="ui-sec2-desc">Documents are automatically read from the local <code>/documents</code> folder.</p>
+
+      <!-- Documents Status List -->
+      <div id="file-list" class="flex-1 overflow-y-auto space-y-3 max-h-[480px] pr-1">
+        <!-- Dynamic Local Files Status -->
+      </div>
+    </section>
+
+    <!-- Right Column: Validation & Audit Summary -->
+    <section class="lg:col-span-3 bg-slate-800 rounded-xl border border-slate-700 p-5 flex flex-col gap-4">
+      <div class="border-b border-slate-700 pb-3">
+        <h2 class="font-semibold text-slate-200 flex items-center gap-2" id="ui-sec3-title">
+          <i data-lucide="shield-alert" class="w-5 h-5 text-blue-400"></i>
+          3. Compliance Audit
+        </h2>
+      </div>
+
+      <!-- Overall Status Banner -->
+      <div id="audit-banner" class="p-4 rounded-lg bg-slate-900 border border-slate-700 text-center">
+        <div id="status-icon" class="inline-block p-2 rounded-full mb-2 bg-slate-800 text-slate-400">
+          <i data-lucide="info" class="w-6 h-6"></i>
+        </div>
+        <h3 id="status-title" class="font-bold text-sm text-slate-200">Checking Documents...</h3>
+        <p id="status-sub" class="text-xs text-slate-400 mt-1">Reading files from the local /documents folder.</p>
+      </div>
+
+      <!-- Audit Checklist Details -->
+      <div class="flex-1 overflow-y-auto space-y-2 pr-1" id="audit-checks">
+        <!-- Dynamic Audit Rules -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- External JavaScript Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
