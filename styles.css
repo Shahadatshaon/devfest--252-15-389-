@@ -1,5 +1,14 @@
-/* Drag and Drop Hover State */
-.drag-over {
-  border-color: #3b82f6 !important;
-  background-color: #eff6ff !important;
+/* Custom Scrollbars for dark theme UI */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
 }
